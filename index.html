@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>分帳計算器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .box {
+      background: white;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+      border-radius: 8px;
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .result {
+      margin-top: 20px;
+      background: #eef;
+      padding: 10px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h2>🍽 分帳計算器</h2>
+
+  <label>吃飯人數
+    <input type="number" id="people" min="1" value="4">
+  </label>
+
+  <label>總金額
+    <input type="number" id="total" min="0" value="2000">
+  </label>
+
+  <label>先付錢的人（格式：名字 金額，一行一個）</label>
+  <textarea id="paidList" rows="5" style="width:100%;">
+A 800
+B 600
+  </textarea>
+
+  <button onclick="calculate()">計算</button>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+function calculate() {
+  const people = Number(document.getElementById("people").value);
+  const total = Number(document.getElementById("total").value);
+  const paidText = document.getElementById("paidList").value.trim();
+  const resultDiv = document.getElementById("result");
+
+  if (people <= 0 || total <= 0) {
+    resultDiv.innerHTML = "請輸入正確的人數與金額";
+    return;
+  }
+
+  const perPerson = total / people;
+
+  let paid = {};
+  let totalPaid = 0;
+
+  if (paidText !== "") {
+    paidText.split("\n").forEach(line => {
+      const [name, amount] = line.split(" ");
+      const money = Number(amount);
+      if (name && !isNaN(money)) {
+        paid[name] = money;
+        totalPaid += money;
+      }
+    });
+  }
+
+  let output = `<b>每人應付：</b> ${perPerson.toFixed(2)} 元<br><br>`;
+
+  for (let name in paid) {
+    const diff = paid[name] - perPerson;
+    if (diff > 0) {
+      output += `${name} 多付 ${diff.toFixed(2)} 元<br>`;
+    } else if (diff < 0) {
+      output += `${name} 少付 ${Math.abs(diff).toFixed(2)} 元<br>`;
+    } else {
+      output += `${name} 剛好付清<br>`;
+    }
+  }
+
+  const unpaidCount = people - Object.keys(paid).length;
+  if (unpaidCount > 0) {
+    output += `<br>還有 ${unpaidCount} 人尚未付錢，每人需付 ${perPerson.toFixed(2)} 元`;
+  }
+
+  resultDiv.innerHTML = output;
+}
+</script>
+
+</body>
+</html>
