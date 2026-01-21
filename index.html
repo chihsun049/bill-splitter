@@ -79,42 +79,83 @@ function calculate() {
   }
 
   const perPerson = total / people;
-
-  let paid = {};
-  let totalPaid = 0;
+  const paid = {};
 
   if (paidText !== "") {
     paidText.split("\n").forEach(line => {
-      const [name, amount] = line.split(" ");
+      const [name, amount] = line.trim().split(/\s+/);
       const money = Number(amount);
       if (name && !isNaN(money)) {
         paid[name] = money;
-        totalPaid += money;
       }
     });
   }
 
+  // 建立 balance
+  const balances = [];
+  for (let name in paid) {
+    balances.push({
+      name,
+      balance: paid[name] - perPerson
+    });
+  }
+
+  const unpaidCount = people - balances.length;
+  for (let i = 0; i < unpaidCount; i++) {
+    balances.push({
+      name: `未付者${i + 1}`,
+      balance: -perPerson
+    });
+  }
+
+  const creditors = balances.filter(b => b.balance > 0.01);
+  const debtors   = balances.filter(b => b.balance < -0.01);
+
+  const transfers = [];
+  let i = 0, j = 0;
+
+  while (i < debtors.length && j < creditors.length) {
+    const debtor = debtors[i];
+    const creditor = creditors[j];
+
+    const amount = Math.min(
+      -debtor.balance,
+      creditor.balance
+    );
+
+    transfers.push(
+      `${debtor.name} → ${creditor.name}：${amount.toFixed(2)} 元`
+    );
+
+    debtor.balance += amount;
+    creditor.balance -= amount;
+
+    if (Math.abs(debtor.balance) < 0.01) i++;
+    if (Math.abs(creditor.balance) < 0.01) j++;
+  }
+
+  // 輸出
   let output = `<b>每人應付：</b> ${perPerson.toFixed(2)} 元<br><br>`;
 
-  for (let name in paid) {
-    const diff = paid[name] - perPerson;
-    if (diff > 0) {
-      output += `${name} 多付 ${diff.toFixed(2)} 元<br>`;
-    } else if (diff < 0) {
-      output += `${name} 少付 ${Math.abs(diff).toFixed(2)} 元<br>`;
+  balances.forEach(b => {
+    if (b.balance > 0.01) {
+      output += `${b.name} 多付 ${b.balance.toFixed(2)} 元<br>`;
+    } else if (b.balance < -0.01) {
+      output += `${b.name} 少付 ${Math.abs(b.balance).toFixed(2)} 元<br>`;
     } else {
-      output += `${name} 剛好付清<br>`;
+      output += `${b.name} 剛好付清<br>`;
     }
-  }
+  });
 
-  const unpaidCount = people - Object.keys(paid).length;
-  if (unpaidCount > 0) {
-    output += `<br>還有 ${unpaidCount} 人尚未付錢，每人需付 ${perPerson.toFixed(2)} 元`;
-  }
+  output += `<br><b>🔁 最佳化轉帳方式：</b><br>`;
+  transfers.forEach(t => {
+    output += `${t}<br>`;
+  });
 
   resultDiv.innerHTML = output;
 }
 </script>
+
 
 </body>
 </html>
